@@ -1,0 +1,7 @@
+{
+    "agg_subject": "Hamilton_Agg_LH_no63_131_143",
+    "subjects": ["EC2","EC33","EC35","EC36","EC37","EC55","EC60","EC82",
+                "EC92","EC113","EC118"],
+    "load_filename" : "EC*_*_HilbAA_70to150_8band_*_out_resp_log.mat",
+    "out_filename" : "Hamilton_Agg_LH_no63_131_143_HilbAA_70to150_8band_out_resp_log.pkl"
+}

@@ -1,0 +1,25 @@
+name: mtrf_python
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.7
+  - pip
+  - ipython
+  - numpy
+  - matplotlib
+  - pytest
+  - h5py
+  - scipy
+  - scikit-learn
+  - patsy
+  - pandas
+  - ffmpeg
+  - pip:
+      - statsmodels
+      - pysurfer
+      - pyqt5
+      - git+https://github.com/emilyps14/iRRR_python.git
+      - git+https://github.com/emilyps14/jPCA.git
+      - git+https://github.com/emilyps14/es_utils.git
+

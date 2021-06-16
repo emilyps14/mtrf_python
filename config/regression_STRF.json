@@ -1,0 +1,7 @@
+{
+    "training_features" : ["aud"],
+    "drop_features" : [] ,
+    "time_lag" : 0.5,
+    "blnSTGOnly" : 0,
+    "befaft" : [0.5, 0.5]
+}

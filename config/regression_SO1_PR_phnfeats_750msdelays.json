@@ -1,0 +1,50 @@
+{
+  "training_features": [
+    "sentence_onset",
+    "peakRate",
+    "phnfeatonset"
+  ],
+  "drop_features": [
+    "voiced",
+    "obstruent",
+    "sonorant",
+    "syllabic"
+  ],
+  "time_lag": {
+    "default": 0.75
+  },
+  "blnSTGOnly": 1,
+  "strf_r2_threshold": {
+    "strf_config_flag": "regression_STRF",
+    "processing_filename": "strf_r2_threshold_Ridge.pkl",
+    "alphas": [
+      0,
+      1.00000000e+02,
+      1.83298071e+02,
+      3.35981829e+02,
+      6.15848211e+02,
+      1.12883789e+03,
+      2.06913808e+03,
+      3.79269019e+03,
+      6.95192796e+03,
+      1.27427499e+04,
+      2.33572147e+04,
+      4.28133240e+04,
+      7.84759970e+04,
+      1.43844989e+05,
+      2.63665090e+05,
+      4.83293024e+05,
+      8.85866790e+05,
+      1.62377674e+06,
+      2.97635144e+06,
+      5.45559478e+06,
+      1.00000000e+07
+    ],
+    "r2_threshold": 0.05,
+    "col_ctr": 1
+  },
+  "befaft": [
+    0.5,
+    0.5
+  ]
+}
