@@ -69,6 +69,8 @@ def run_regression_cv(subject, config_flag, iRRR_config_path,
         with open(op.join(cv_job_path,'cv_setup.json'), "w") as f:
             json.dump(job_config,f)
 
+    for i in range(nfolds_outer):
+        cv_job_path = op.join(cv_folder,f'job_{i}')
         if bash_path is None:
             run_job_from_config(cv_job_path)
         else:
