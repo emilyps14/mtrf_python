@@ -27,7 +27,7 @@ blnsave = True
 
 cv_folder = 'cv-10fold'
 
-# [Data prep in run_cv_750msdelays.py]
+# [Data prep in run_cv.py]
 
 #%%
 figurepath = op.join(loadpath, 'Figures', 'Manuscript Figures')
@@ -84,8 +84,7 @@ cv1_best_ndims_by_feature = cv1_best_irrr['details']['rec_nonzeros'][-1, :]
 
 #%% Load sentence details
 
-preproc_dir = config['local_timit_dir']
-sentdet_df, featurenames, phnnames = STRF_utils.load_sentence_details(op.join(preproc_dir))
+sentdet_df, featurenames, phnnames = STRF_utils.load_sentence_details(subjects_dir)
 
 #%% Get 2d surface with coordinates
 
@@ -181,111 +180,3 @@ for i, (name,feat_delays,mtrf_approx) in enumerate(zip(phnstimnames[:nfeat_toplo
             fig2.savefig(op.join(figurepath,f'{agg_subject}_{name}_{sfx}.png'))
             fig2.savefig(op.join(figurepath,f'{agg_subject}_{name}_{sfx}.svg'))
             fig.savefig(op.join(figurepath,f'{agg_subject}_{name}_colorbar.svg'))
-
-#%% <Below is experimenting with electrode traces>
-
-
-
-
-sentence_ind_to_name = {x['sentence_ind'][0,0,0].split('_')[0]:x['name'] for i,x in df.iterrows()}
-
-sentence_name_to_summary = {}
-for i,cv_summary in enumerate(cv_summaries):
-    cv_test_sentences = [sentence_ind_to_name[x.split('_')[0]] for x in np.unique(sentence_ind[cv_summary['test_inds']])]
-    for name_sent in cv_test_sentences:
-        sentence_name_to_summary[name_sent] = i
-
-#%%
-
-import pandas as pd
-mtrf_approx = cv1_strfs_irrr[1]
-ncomponents = int(cv1_best_ndims_by_feature[i])
-U,S,Vh = STRF_utils.get_svd_of_mtrf(mtrf_approx,ncomponents)
-
-df_pr = pd.DataFrame(index=electrodes,data={'R2':cv1_best_irrr['testing_electrode_R2s'],'comp2':Vh[1,:]})
-
-print(df_pr.loc[np.logical_and(df_pr.R2>0.3,df_pr.comp2<-0.05)])
-
-plt.figure()
-plt.scatter(cv1_best_irrr['testing_electrode_R2s'],Vh[1,:])
-
-#%% Example electrodes
-
-# Good SO electrodes: *'EC92_6', 'EC92_22', 'EC82_66', 'EC82_83'
-# Good PR electrodes (positive): 'EC55_198', *'EC36_71'
-# Good PR electrodes (negative): 'EC2_69', 'EC35_131', 'EC36_22', 'EC113_53', 'EC113_132', 'EC113_149'
-
-elnames = ['EC92_6', 'EC36_71',  'EC36_22']
-name_sent = 'fcaj0_si1804'#'fbcg1_si1612' #'fdms0_si1218' #fbcg1_si1612'
-
-
-# TODO use the same CV fold for all panels?
-cv_summary = cv_summaries[sentence_name_to_summary[name_sent]]
-
-
-befaft = [0,0] #reg_config.get('befaft', [0, 0])
-soi = 0
-pri = 1
-df_sent = df.loc[df.name == name_sent]
-
-# Audio timeseries
-sentence = sentdet_df.loc[np.equal(sentdet_df.name, name_sent)].iterrows().__next__()[1]
-source_befaft = sentence.befaft
-soundf = sentence.soundf
-sound_padleft = ((source_befaft[0] - befaft[0]) * soundf).astype(int)
-sound_padright = ((source_befaft[1] - befaft[1]) * soundf).astype(int)
-sound = STRF_utils.remove_pad(sentence.sound[None,:], sound_padleft, sound_padright)[0, :]
-sound_ta = np.arange(len(sound))/soundf
-
-# Features and response
-padleft = ((source_befaft[0] - befaft[0]) * fs).astype(int)
-padright = ((source_befaft[1] - befaft[1]) * fs).astype(int)
-df_sent = df.loc[df.name == name_sent]
-txt = df_sent.iloc[0].txt
-phnstim, ta, _, resp, _ = \
-    get_data_from_df(df_sent,phnstimnames,subjects,
-                     padleft,padright,
-                     electrodes_sel=electrodes)
-so_events = np.where(phnstim[:,soi]>0)[0]
-pr_events = np.where(phnstim[:,pri]>0)[0]
-ta = ta[:,0]
-
-dstims, _ = get_delay_matrices(phnstim, phnstimnames, time_lags, fs)
-pred = STRF_utils.compute_pred(np.concatenate(dstims,axis=1),cv_summary['best_irrr']['wts'],
-                               cv_summary['best_irrr']['mu'].T)
-
-# Figure
-plt.close('all')
-fig = plt.figure(figsize=[7,6])
-gs = GridSpec(len(elnames)+1,1,hspace=0,left=0.2)
-
-audax = fig.add_subplot(gs[0, 0])
-audax.plot(sound_ta, sound, 'k')
-for pt in ta[so_events]:
-    audax.axvline(pt,linestyle='-',color='k')
-for pt in ta[pr_events]:
-    audax.axvline(pt,linestyle='--',color='k')
-audax.set_title(txt)
-audax.spines['top'].set_visible(False)
-audax.spines['right'].set_visible(False)
-audax.set_xticklabels([])
-audax.set_yticks([])
-
-for i,elname in enumerate(elnames):
-    ax = fig.add_subplot(gs[i+1,0])
-    eli = np.argwhere(np.array(electrodes)==elname)[0]
-    # ax.plot(ta,resp[:,eli],'k')
-
-    subj = elname.split('_')[0]
-    df_sent_subj = df_sent[df_sent.subject==subj]
-    _, _, _, resp_subj, _ = \
-        get_data_from_df(df_sent_subj,phnstimnames,[subj],
-                         padleft,padright,
-                         electrodes_sel=[elname],
-                         repeat_sel=range(df_sent_subj.nrepeats.min()))
-    ax.plot(ta,resp_subj[:,0,:],color='grey')
-    ax.plot(ta,resp_subj[:,0,:].mean(1),color='k',linewidth=2)
-
-    ax.plot(ta,pred[:,eli],'r')
-
-    ax.set_ylabel(elname,rotation=0,labelpad=30)

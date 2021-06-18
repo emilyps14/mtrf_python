@@ -27,7 +27,7 @@ blnsave = True
 
 cv_folder = 'cv-10fold'
 
-# [Data prep in run_cv_750msdelays.py]
+# [Data prep in run_cv.py]
 
 #%%
 figurepath = op.join(loadpath, 'Figures', 'Manuscript Figures')
@@ -74,8 +74,7 @@ resp = resp-resp.mean(0,keepdims=True)
 
 
 #%% sentence details
-preproc_dir = config['local_timit_dir']
-sentdet_df, featurenames, phnnames = STRF_utils.load_sentence_details(op.join(preproc_dir))
+sentdet_df, featurenames, phnnames = STRF_utils.load_sentence_details(subjects_dir)
 sentdet_df = sentdet_df.set_index(sentdet_df.name)
 
 #%% Get 2d surface with coordinates

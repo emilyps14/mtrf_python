@@ -27,10 +27,10 @@ blnsave = True
 
 cv_folder = 'cv-10fold'
 
-# [Data prep in run_cv_750msdelays.py]
+# [Data prep in run_cv.py]
 
 #%%
-figurepath = op.join(loadpath, 'Figures', 'latency_decode')
+figurepath = op.join(loadpath, 'Figures', 'Manuscript Figures')
 if not op.exists(figurepath) and blnsave:
     makedirs(figurepath)
 
@@ -77,69 +77,7 @@ cv1_best_ndims_by_feature = cv1_best_irrr['details']['rec_nonzeros'][-1, :].asty
 cv1_train_inds = cv_summaries[0]['train_inds']
 cv1_test_inds = cv_summaries[0]['test_inds']
 
-#%% Identify electrodes with significant unique R^2 from the ols model
-# Can't use the performance on the outer cv testing data, since I use the outer fold testing data downstream for the decode confidence intervals
-
-# # for each cv fold,
-# ridgeUniqueR2 = np.zeros((nfolds_outer,nfolds_inner,nchans,ndim))
-# for i,cv_summary in enumerate(cv_summaries):
-#     print(f'Outer fold {i}')
-#     best_alpha_inds = cv_summary['best_ridge_model']['best_models']
-#     full_model_r2s = cv_summary['best_ridge_model']['training_cv_electrode_R2s']
-#     alphas = cv_summary['alphas']
-#     alphas = alphas[:best_alpha_inds.max()+1] # cut off the alphas at the end that aren't used, for speed
-#
-#     # go back through the inner cv folds
-#     for j,(loadpath, train_inds, validate_inds, tStim, tResp, vStim, vResp) in \
-#         enumerate(load_training_data(cv_summary['subject'], cv_summary['config_flag'],
-#                                      column_center=cv_summary['col_ctr_RR'],
-#                                      sample_inds=cv_summary['train_inds'],
-#                                      nfolds=nfolds_inner)):
-#         print(f' Inner fold {j}')
-#
-#         # # Compute full model R2 (I checked that this is the same as full_model_r2s)
-#         # _, _, full_r2s = STRF_utils.ridge_regression(
-#         #     np.concatenate(tStim,axis=1),tResp,
-#         #     np.concatenate(vStim,axis=1),vResp,
-#         #     alphas)
-#
-#         # for each feature (this computes for all alpha and we only use the best alpha for each electrode, but I still think it's faster to compute all electrodes at once)
-#         for l in range(ndim):
-#             print(f'  Feature {l}')
-#             # compute the LOO model r2
-#             sel = list(range(l))+list(range(l+1,ndim))
-#             _, _, loo_r2s = STRF_utils.ridge_regression(
-#                 np.concatenate([tStim[l] for l in sel],axis=1),tResp,
-#                 np.concatenate([vStim[l] for l in sel] if len(vStim)>0 else [],axis=1),vResp,
-#                 alphas)
-#
-#             # for each electrode
-#             for k,alpha_ind in enumerate(best_alpha_inds):
-#                 # fix the alpha value based on the inner cv
-#                 full_r2 = full_model_r2s[alpha_ind,j,k]
-#
-#                 # compute the unique variance
-#                 ridgeUniqueR2[i,j,k,l] = full_r2-loo_r2s[alpha_ind,k]
-#
-# # Take the mean over the inner folds
-# ridgeUniqueR2_mean = ridgeUniqueR2.mean(axis=1)  # nfolds_outer,nchans,ndim
-#
-# plt.close('all')
-# for l in np.arange(ndim):
-#     plt.figure()
-#     plt.hist(ridgeUniqueR2_mean[:,:,l].flatten(),100,histtype='step',label=phnstimnames[l])
-#     plt.title(phnstimnames[l])
-# plt.legend()
-#
-# # threshold the unique r2 to get feature electrodes
-# unique_r2_thresh = 0.005
-# ridgeFeatureElectrodes = ridgeUniqueR2_mean>unique_r2_thresh
-#
-# print(ridgeFeatureElectrodes.sum(axis=1)) # number of chosen electrodes for each feature for each fold
-
 #%% Functions
-
-# from sklearn.linear_model import RidgeCV, LinearRegression
 
 # compute time since sentence onset and peak rate events for training and validation data
 def trial_latency(stimdata,max_latency=0.5):
@@ -161,8 +99,6 @@ def get_latent_projection(mtrf_approx,ncomponents):
 def decode_helper(X_train, Y_train,X_test,Y_test,swtScore):
     regr = MLPRegressor(random_state=1, max_iter=500, hidden_layer_sizes=(20,),
                         alpha=1e-5,activation='logistic').fit(X_train, Y_train)
-    # regr = RidgeCV().fit(X_train,Y_train)
-    # regr = LinearRegression().fit(X_train, Y_train)
     y_hat = regr.predict(X_test)
     if swtScore=='score':
         r2 = regr.score(X_test, Y_test)
@@ -232,9 +168,6 @@ phnstimnames_to_train = [f'{name}_latency' for name in phnstimnames[feats_to_tra
 jpcas = STRF_utils.compute_jPCA_on_MTRFs(phnstimnames, delays, cv1_best_ndims_by_feature, cv1_strfs_irrr)
 jpcs_to_train = [jpcas[phnstimnames[i]]['jpca'].jpcs for i in feats_to_train]
 latent_projs_to_train = [get_latent_projection(cv1_strfs_irrr[i], cv1_best_ndims_by_feature[i]) for i in feats_to_train]
-# ridge_feature_projs_to_train = [np.diag(ridgeFeatureElectrodes[0,:,i])[:,ridgeFeatureElectrodes[0,:,i]]
-#                                 if sum(ridgeFeatureElectrodes[0,:,i])>0 else np.zeros((nchans,1))
-#                                 for i in range(ndim) ] # projection matrix just selects the electrodes that have enough unique variance under the ridge model for that feature
 
 for name,colname,lag in zip(phnstimnames[feats_to_train],phnstimnames_to_train,time_lags):
     df[colname] = df.apply(lambda x: trial_latency(x[name],lag),axis=1)
@@ -252,8 +185,6 @@ ta,phnstim,resp,timesel = ta_all[cv1_train_inds,:],phnstim_all[cv1_train_inds,:]
 ta_val,phnstim_val,resp_val,timesel_val = ta_all[cv1_test_inds,:],phnstim_all[cv1_test_inds,:],resp_all[cv1_test_inds,:],timesel_all[cv1_test_inds,:]
 
 plt.close('all')
-# proj_list = [[np.eye(nchans)]*ndim, latent_projs_to_train, jpcs_to_train, ridge_feature_projs_to_train]
-# proj_names = ['All Electrodes','Latent Projection','jPCA Projection','Ridge Projection']
 proj_list = [[np.eye(nchans)]*ndim, latent_projs_to_train, jpcs_to_train]
 proj_names = ['All Electrodes','Latent Projection','jPCA Projection']
 r2s = decode_latency(phnstimnames_to_train,
@@ -262,37 +193,6 @@ r2s = decode_latency(phnstimnames_to_train,
                    proj_list,
                    proj_names,
                     blnCenter,swtScore)
-# why are the regr.score values negative for phonetic features using all electrodes?
-# because the way the score is calculated:
-# (1 - u/v), where u is the residual
-# sum of squares ((y_true - y_pred) ** 2).sum() and v is the total
-# sum of squares ((y_true - y_true.mean()) ** 2).sum().
-# So the residual sum of squares is larger than the total sum of squares
-
-# Tried it with 3 layers (40,40,40) in the perceptron and it didn't change the
-# scores much. (I was hoping for double descent -- does that make sense?)
-
-# Tried it with sklearn.linear_model.RidgeCV and
-# sklearn.linear_model.LinearRegression and there were no negative r^2 values
-
-#%%
-
-# f = plt.figure()
-# for projname,r2 in zip(proj_names,r2s.T):
-#     plt.scatter(np.arange(ndim),r2,marker='x',label=projname)
-# plt.legend()
-# plt.xticks(np.arange(ndim),[name for name in phnstimnames[feats_to_train]],rotation=45,ha='right')
-# ax = plt.gca()
-# ax.axhline(0,color='k',linewidth=1)
-# ax.set_ylabel('Testing R^2')
-# ax.set_title('Decoding time relative to event')
-# ax.legend()
-#
-# for i in range(ndim):
-#     plt.text(i,0,ridgeFeatureElectrodes[0,:,i].sum(),horizontalalignment='center',verticalalignment='bottom')
-#
-# if blnsave:
-#     f.savefig(op.join(figurepath,f'decode_perf_allprojs_{swtScore}.png'))
 
 #%%
 
@@ -422,11 +322,9 @@ if blnsave:
 tosave = dict(feats_to_train=feats_to_train,
               blnCenter=blnCenter,
               swtScore=swtScore,
-              # ridgeUniqueR2=ridgeUniqueR2,
               phnstimnames_to_train=phnstimnames_to_train,
               jpcs_to_train=jpcs_to_train,
               latent_projs_to_train=latent_projs_to_train,
-              # ridge_feature_projs_to_train=ridge_feature_projs_to_train,
               r2s=r2s,
               r2s_cv=r2s_cv,
               ta=ta, phnstim=phnstim, resp=resp, timesel=timesel,
@@ -457,40 +355,17 @@ plt.close('all')
 feati=0
 proji=1
 
-if False:
-    df['long_sentence_onset'] = df.apply(lambda x: trial_latency(x['sentence_onset'],2),axis=1)
+tselcol = timesel[:,feati]
+stimcol = phnstim[:,feati]
+tselcol_val = timesel_val[:,feati]
+stimcol_val = phnstim_val[:,feati]
 
-    phnstim_long_so, ta_long_so, _, resp_long_so, _ = get_data_from_df(df,['long_sentence_onset'],
-                                                           subjects,
-                                                           0,0,
-                                                           electrodes_sel=electrodes)
-    timesel_long_so = np.logical_not(np.isnan(phnstim_long_so))
+X_train = resp[tselcol,:]
+Y_train = stimcol[tselcol]
+X_test = resp_val[tselcol_val,:]
+Y_test = stimcol_val[tselcol_val]
 
-    ta_lso,phnstim_lso,resp_lso,timesel_lso = ta_long_so[cv1_train_inds,:],phnstim_long_so[cv1_train_inds,:],resp_long_so[cv1_train_inds,:],timesel_long_so[cv1_train_inds,:]
-    ta_val_lso,phnstim_val_lso,resp_val_lso,timesel_val_lso = ta_long_so[cv1_test_inds,:],phnstim_long_so[cv1_test_inds,:],resp_long_so[cv1_test_inds,:],timesel_long_so[cv1_test_inds,:]
-
-    tselcol = timesel_lso[:,0]
-    stimcol = phnstim_lso[:,0]
-    tselcol_val = timesel_val_lso[:,0]
-    stimcol_val = phnstim_val_lso[:,0]
-
-    X_train = resp_lso[tselcol,:]
-    Y_train = stimcol[tselcol]
-    X_test = resp_val_lso[tselcol_val,:]
-    Y_test = stimcol_val[tselcol_val]
-    featname = 'long_sentence_onset'
-else:
-    tselcol = timesel[:,feati]
-    stimcol = phnstim[:,feati]
-    tselcol_val = timesel_val[:,feati]
-    stimcol_val = phnstim_val[:,feati]
-
-    X_train = resp[tselcol,:]
-    Y_train = stimcol[tselcol]
-    X_test = resp_val[tselcol_val,:]
-    Y_test = stimcol_val[tselcol_val]
-
-    featname = phnstimnames_to_train[feati]
+featname = phnstimnames_to_train[feati]
 
 latent_proj = latent_projs_to_train[proji]
 jpca = jpcs_to_train[proji]

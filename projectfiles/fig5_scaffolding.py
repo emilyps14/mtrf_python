@@ -25,7 +25,7 @@ blnsave = True
 
 cv_folder = 'cv-10fold'
 
-# [Data prep in run_cv_750msdelays.py]
+# [Data prep in run_cv.py]
 
 #%%
 figurepath = op.join(loadpath, 'Figures', 'Manuscript Figures')
@@ -66,8 +66,7 @@ lambdas = np.array(irrr_config['lambdas']) # 10**np.array([-1.5, -1.1, -0.7, -0.
 nlambdas = len(lambdas)
 
 
-preproc_dir = config['local_timit_dir']
-sentdet_df, featurenames, phnnames = STRF_utils.load_sentence_details(op.join(preproc_dir))
+sentdet_df, featurenames, phnnames = STRF_utils.load_sentence_details(subjects_dir)
 
 #%% Load results
 
@@ -100,18 +99,12 @@ for i,cv_summary in enumerate(cv_summaries):
 cmap = 'jet'
 mplcmap = cm.get_cmap(cmap)
 
-# name_sent = 'fdms0_si1218' # poets, moreover
-# pr_events_toplot = [0,3,5]
 name_sent = 'fcaj0_si1804' # clockwork
 pr_events_toplot = [0,1,2,3]
-# name_sent = 'mfwk0_si1249' # twenty thirty fifty
-# pr_events_toplot = [0,1,2,3]
-# name_sent = 'fbcg1_si1612' # they've never met, you know
-# pr_events_toplot = None
 
 blnPrediction = True # whether to plot prediction or projected responses
 
-befaft = [0,0] #reg_config.get('befaft', [0, 0])
+befaft = [0,0]
 feati = pri
 
 sentence = sentdet_df.loc[np.equal(sentdet_df.name, name_sent)].iterrows().__next__()[1]
@@ -128,13 +121,10 @@ padright = ((source_befaft[1] - befaft[1]) * fs).astype(int)
 plt.close('all')
 
 def plot_jpcs(ax,ta,latent_state,norm,**kwargs):
-    # STRF_utils.colorline(latent_state[:,0],latent_state[:,1],c=ta,cmap=cmap,norm=norm,ax=ax)
     lb = latent_state[:,:2].min()*1.1
     ub = latent_state[:,:2].max()*1.1
     ax.set_xlim(lb,ub)
     ax.set_ylim(lb,ub)
-    # ax.axhline(0,color='k')
-    # ax.axvline(0,color='k')
     ax.plot(latent_state[:,0],latent_state[:,1],**kwargs)
 
 
@@ -178,11 +168,6 @@ for pt in ta[pr_events[pr_events_toplot]]:
 audax.set_title(txt)
 audax.set_xlim(ta[[0,-1]])
 
-# prax = fig.add_subplot(gs[1, :], sharex=audax)
-# prax.plot(ta, phnstim[:,feati],color='grey')
-# prax.axis('off')
-
-
 mtrf_approx = best_irrr['strfs'][feati]
 jpca_sel = jpcas[phnstimnames[feati]]['jpca']
 pred_state = dstim[feati] @ mtrf_approx @ jpca_sel.jpcs
@@ -219,8 +204,6 @@ for i,(event_toplot,next_event) in enumerate(zip(pr_events[pr_events_toplot],np.
         latentax.spines['left'].set_visible(False)
         latentax.set_yticks([])
 
-# fig.text(0.5,0.05,f'{phnstimnames[feati]} Latent State (jPCA projection)',horizontalalignment='center')
-
 if blnsave:
     fig.savefig(op.join(figurepath,f'{name_sent}_scaffolding.png'))
     fig.savefig(op.join(figurepath,f'{name_sent}_scaffolding.svg'))
@@ -238,7 +221,6 @@ for pt in ta[feat_events]:
 for pt in ta[pr_events[pr_events_toplot]]:
     ax.axvline(pt,linestyle='-',color='k')
 
-# ax.scatter(phnstim[:,2:].T,aspect='auto')
 ax.set_yticks(range(ndim))
 ax.set_yticklabels(phnstimnames)
 
@@ -268,7 +250,6 @@ pred_state_3d = dstim[feati] @ (U*S)
 fig = plt.figure()
 ax = fig.add_subplot(projection='3d')
 STRF_utils.colorline(pred_state_3d[:,0],pred_state_3d[:,1],pred_state_3d[:,2],c=ta,cmap=cmap,norm=norm,ax=ax)
-# ax.scatter(pred_state_3d[pr_events[pr_events_toplot],0],pred_state_3d[pr_events[pr_events_toplot],1],pred_state_3d[pr_events[pr_events_toplot],2],color='k')
 ax.set_xlim(pred_state_3d[:,0].min() - pred_state_3d[:,0].std()/2,pred_state_3d[:,0].max() + pred_state_3d[:,0].std()/2)
 ax.set_ylim(pred_state_3d[:,1].min() - pred_state_3d[:,1].std()/2,pred_state_3d[:,1].max() + pred_state_3d[:,1].std()/2)
 ax.set_zlim(pred_state_3d[:,2].min() - pred_state_3d[:,2].std()/2,pred_state_3d[:,2].max() + pred_state_3d[:,2].std()/2)

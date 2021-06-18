@@ -48,10 +48,11 @@ There is a dataset to accompany this repo, containing the following folders/file
             + Hamilton_Agg_LH_no63_131_143_lh_pial_lateral_2dSurf.pkl [electrode and surface information for plotting, from prepare_2d_surface_script.py]
     + sentence_text.mat [text for the TIMIT sentences]
     + out_sentence_details_timit_all_loudness.mat [feature information for each TIMIT sentence]
+    + mel_centerF.mat [center frequencies for the mel spectrograms]
 
 ### Running the cross-validated regression models
 The code to identify speech-responsive electrodes and to run the cross-validated 
-regression models (OLS, Regression, and iRRR) is in the file (After running this script, the size of the subject folder will be about XXX Gb): 
+regression models (OLS, Regression, and iRRR) is in the file (After running this script, the size of the subject folder will be about 84.5 Gb. After running collect_cv_results.py, you can delete the folder cv-10fold to reduce space): 
 + projectfiles/run_cv_750msdelays.py.
 
 Code to regenerate figures from the manuscript is in the files:

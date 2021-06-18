@@ -28,7 +28,7 @@ blnsave = True
 
 cv_folder = 'cv-10fold'
 
-# [Data prep in run_cv_750msdelays.py]
+# [Data prep in run_cv.py]
 
 #%%
 figurepath = op.join(loadpath, 'Figures', 'Manuscript Figures')
@@ -85,10 +85,9 @@ cv1_best_ndims_by_feature = cv1_best_irrr['details']['rec_nonzeros'][-1, :].asty
 
 #%% Load sentence details
 
-preproc_dir = config['local_timit_dir']
-sentdet_df, featurenames, phnnames = STRF_utils.load_sentence_details(op.join(preproc_dir))
+sentdet_df, featurenames, phnnames = STRF_utils.load_sentence_details(subjects_dir)
 
-freqs = loadmat(op.join(preproc_dir,'mel_centerF.mat'), squeeze_me=True,
+freqs = loadmat(op.join(subjects_dir,'mel_centerF.mat'), squeeze_me=True,
                   variable_names=['binfrqs'])['binfrqs']
 fa_corners = freqs[:81]
 fa = (fa_corners[1:]+fa_corners[:-1])/2
