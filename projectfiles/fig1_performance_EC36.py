@@ -14,12 +14,11 @@ from scipy.stats import ttest_rel, t as tdist
 from mtrf_python import STRF_utils, peakRate
 from mtrf_python.scripts.prepare_regression_data_script import get_data_from_df
 
-agg_subject = 'Hamilton_Agg_LH_no63_131_143' # 'Hamilton_Agg_LH_9subjects'
+agg_subject = 'EC36' # 'Hamilton_Agg_LH_9subjects'
 strf_config_flag = 'regression_STRF'
 config_flag = 'regression_SO1_PR_phnfeats_750msdelays'
 loo_config_flags = ['regression_justPhonetic_750msdelays',
                         'regression_SO1_PR_750msdelays']
-irrr_flag = 'iRRR_210111' # 10**np.array([-1.5, -1.1, -0.7, -0.3, -0.1, 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.9])
 col_ctr_RR = True
 
 # Load paths
@@ -106,8 +105,19 @@ hemi = 'lh'
 surfpath = op.join(loadpath,f'{agg_subject}_{hemi}_pial_lateral_2dSurf.pkl')
 
 if not op.isfile(surfpath):
-    from mtrf_python.scripts import prepare_2d_surface_script
-    prepare_2d_surface_script.prepare_2d_surface(agg_subject,config_flag,hemi=hemi)
+    with open(op.join(subjects_dir, agg_subject,f'{agg_subject}_{hemi}_pial_lateral_2dSurf_grid.pkl'),'rb') as f:
+        fullsurf = pickle.load(f)
+    surfdict = {}
+    surfdict['img'] = fullsurf['img']
+    surfdict['trans_dict'] = fullsurf['trans_dict']
+    surfdict['coords_2d'] = fullsurf['coords_2d'][[int(ch.split('_')[1]) for ch in electrodes],:]
+
+    fig, ax = plt.subplots()
+    ax.imshow(surfdict['img'])
+    ax.scatter(surfdict['coords_2d'][:, 0], surfdict['coords_2d'][:, 1])
+
+    with open(surfpath,'wb') as f:
+        pickle.dump(surfdict,f)
 
 with open(surfpath,'rb') as f:
     surfdict = pickle.load(f)
