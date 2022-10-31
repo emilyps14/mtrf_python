@@ -41,6 +41,10 @@ The `mtrf_config.json` file defines the base path variables that are referenced 
 ### Necessary data
 There is a dataset to accompany this repo, containing the following folders/files:
 + subjects/
+    + EC36 [For Single Subject Summary in Supplementary Material]
+        + EC36.json
+        + EC36_HilbAA_70to150_8band_out_resp_log.pkl
+        + EC36_lh_pial_lateral_2dSurf_grid.pkl
     + Hamilton_Agg_LH_no63_131_143/
         + Hamilton_Agg_LH_no63_131_143.json [configuration from prepare_combined_subject_df_script.py]
         + Hamilton_Agg_LH_no63_131_143_HilbAA_70to150_8band_out_resp_log.pkl [data file created by prepare_combined_subject_df_script.py]
@@ -62,3 +66,4 @@ Code to regenerate figures from the manuscript is in the files:
 + projectfiles/fig4_decode_latency_from_state.py
 + projectfiles/fig5_scaffolding.py
 + projectfiles/figS1_pca.py
++ projectfiles/figS2_EC36_summary.py
